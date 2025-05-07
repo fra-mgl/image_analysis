@@ -35,6 +35,18 @@ import pandas as pd
 from torchvision import transforms
 from torch.utils.data import DataLoader, random_split
 
+class TrainingParams():
+    def __init__(self, folder_path, model_path, epoch_number, cell_dataset, saving_interval, output_dir, train_size, val_size):
+        self.folder_path = folder_path,
+        self.model_path = model_path
+        self.epoch_number = epoch_number
+        self.cell_dataset = cell_dataset
+        self.saving_interval = saving_interval
+        self.output_dir = output_dir
+        self.train_size = train_size
+        self.val_size = val_size
+
+
 class ChocolateDataset(Dataset):
     def __init__(self, csv_file, image_dir, transform=None):
         self.data = pd.read_csv(csv_file)
@@ -57,9 +69,8 @@ class ChocolateDataset(Dataset):
         return image, label
     
 
-
-
-def train():
+# NOW dataset is function parameter
+def train(params, full_dataset):
     #DATASET PREPARATION
     # 1. Define your transforms
     transform = transforms.Compose([
@@ -68,18 +79,16 @@ def train():
     ])
 
     # 2. Load the full dataset
-    full_dataset = ChocolateDataset(
-        csv_file="/home/elisa/image_analysis/project/dataset_project_iapr2025/train.csv",
-        image_dir=""
-        mask_dir="",
-        transform=transform
-        #target_transform=transforms.Resize((512, 512))
-    )
+    # full_dataset = ChocolateDataset(
+    #     csv_file="/home/elisa/image_analysis/project/dataset_project_iapr2025/train.csv",
+    #     image_dir=""
+    #     mask_dir="",
+    #     transform=transform
+    #     #target_transform=transforms.Resize((512, 512))
+    # )
 
     # 3. Split into train and val (e.g. 80 train, 10 val)
-    train_size = 80
-    val_size = 10
-    train_dataset, val_dataset = random_split(full_dataset, [train_size, val_size], generator=torch.Generator().manual_seed(42))
+    train_dataset, val_dataset = random_split(full_dataset, [params.train_size, params.val_size], generator=torch.Generator().manual_seed(42))
 
     # 4. Create dataloaders
     train_loader = DataLoader(train_dataset, batch_size=10, shuffle=True)
@@ -91,16 +100,16 @@ def train():
     #------------------------------------
     model = UNet(dimensions=22)
     model.to(device)
-    if os.path.isfile(model_path):
-        model.load_state_dict(torch.load(model_path, map_location=torch.device(device)))
+    if os.path.isfile(params.model_path): # FIXME questo deve essere il path del file del modello?
+        model.load_state_dict(torch.load(params.model_path, map_location=torch.device(device)))
     optimizer = optim.RMSprop(
         model.parameters(), lr=0.0001, weight_decay=1e-8, momentum=0.9
     )
     criterion = nn.CrossEntropyLoss()
-    for epoch in range(epoch_number):
+    for epoch in range(params.epoch_number):
         print(f"Epoch {epoch}")
         losses = []
-        for i, batch in enumerate(cell_dataset):
+        for i, batch in enumerate(params.cell_dataset):
             input, target = batch
             input = input.to(device)
             target = target.type(torch.LongTensor).to(device)
@@ -116,13 +125,13 @@ def train():
             losses.append(loss.item())
         # print the average loss for that epoch.
         print(sum(losses) /len(losses))
-        if (epoch + 1) % saving_interval == 0:
+        if (epoch + 1) % params.saving_interval == 0:
             print("Saving model")
 
-        torch.save(model.state_dict(), model_path)
-    torch.save(model.state_dict(), model_path)
+        torch.save(model.state_dict(), params.model_path)
+    torch.save(model.state_dict(), params.model_path)
     return
 
 
-if __name__ == "__main__":
-    train()
+# if __name__ == "__main__":
+#     train()
