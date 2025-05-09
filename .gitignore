@@ -412,5 +412,5 @@ data/project/
 
 project/dataset_project_iapr2025
 project/u-net/model
-project/u-net/data
+project/u-net/data/VOCdevkit
 >>>>>>> Stashed changes
