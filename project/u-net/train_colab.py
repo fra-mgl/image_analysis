@@ -32,27 +32,6 @@ class MaskTransform:
         # Convert to LongTensor without normalizing
         return torch.as_tensor(np.array(mask), dtype=torch.long)
 
-class DiceLoss(nn.Module):
-    def __init__(self, smooth=1e-6):
-        super(DiceLoss, self).__init__()
-        self.smooth = smooth
-
-    def forward(self, inputs, targets):
-        # Apply softmax to get probabilities for each class
-        inputs = torch.softmax(inputs, dim=1)
-
-        # One-hot encode the target
-        targets_one_hot = torch.nn.functional.one_hot(targets, num_classes=inputs.shape[1])  # (B, H, W, C)
-        targets_one_hot = targets_one_hot.permute(0, 3, 1, 2).float()  # (B, C, H, W)
-
-        # Compute Dice Loss
-        intersection = (inputs * targets_one_hot).sum(dim=(2, 3))
-        union = inputs.sum(dim=(2, 3)) + targets_one_hot.sum(dim=(2, 3))
-        dice = (2. * intersection + self.smooth) / (union + self.smooth)
-
-        return 1 - dice.mean()
-
-
 def train(params):
 
 
@@ -88,9 +67,8 @@ def train(params):
     model.to(device)
 
     optimizer = optim.RMSprop(model.parameters(), lr=0.0001, weight_decay=1e-8, momentum=0.9)
-    # criterion = nn.CrossEntropyLoss()
-    criterion = DiceLoss()
-    alpha = 0.7
+    criterion = nn.CrossEntropyLoss()
+ 
     loss_history = []
 
     for epoch in range(params.epoch_number):
@@ -110,8 +88,7 @@ def train(params):
             optimizer.zero_grad()
             output = model(input)
 
-            #loss = criterion(output, target)
-            loss = alpha * DiceLoss()(output, target) + (1 - alpha) * nn.CrossEntropyLoss()(output, target)
+            loss = criterion(output, target)
             loss.backward()
             optimizer.step()
 
