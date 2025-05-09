@@ -63,8 +63,8 @@ def train(params):
     transforms.CenterCrop((1365, 2048)),  # fixed aspect-ratio shape
     transforms.ColorJitter(brightness=0.5, contrast=1, saturation=0.5),
     transforms.GaussianBlur(kernel_size=(5, 5), sigma=(5, 10)),
-    transforms.RandomErasing(p=0.3),
     transforms.ToTensor()
+    transforms.RandomErasing(p=0.2),
     ])
 
 
