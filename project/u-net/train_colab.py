@@ -22,14 +22,23 @@ class TrainingParams():
   
 
 
+class ResizeLongestSide:
+    def __init__(self, longest=512):
+        self.longest = longest
+
+    def __call__(self, img):
+        w, h = img.size
+        scale = self.longest / max(w, h)
+        new_w = int(round(w * scale))
+        new_h = int(round(h * scale))
+        return img.resize((new_w, new_h), resample=Image.BILINEAR)
+    
 class MaskTransform:
     def __init__(self):
-        self.resize = transforms.Resize(512, interpolation=Image.NEAREST)
-        self.crop = transforms.CenterCrop((1365, 2048))
+        self.resize = ResizeLongestSide(512)
 
     def __call__(self, mask):
         mask = self.resize(mask)
-        mask = self.crop(mask)
         return torch.as_tensor(np.array(mask), dtype=torch.long)
 
 class DiceLoss(nn.Module):
