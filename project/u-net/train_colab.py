@@ -68,7 +68,7 @@ def train(params):
     ])
 
 
-    target_transform = MaskTransform(size=(512, 512))
+    target_transform = MaskTransform()
 
     #2. Load dataset
     print("Loading dataset...")
