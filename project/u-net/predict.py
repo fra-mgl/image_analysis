@@ -2,28 +2,31 @@ import numpy as np
 from PIL import Image
 import torch
 
-from unet import UNet
+from unet.unet import UNet
 from torchvision import transforms, datasets
 import matplotlib.pyplot as plt
 from matplotlib.patches import Patch
+import os
+from torchvision.datasets.vision import VisionDataset
 
 # Define VOC colormap and class names (14 classes)
 VOC_COLORMAP = [
-    (0, 0, 0),         # 0 background
-    (128, 0, 0),       # 1
-    (0, 128, 0),       # 2
-    (128, 128, 0),     # 3
-    (0, 0, 128),       # 4
-    (128, 0, 128),     # 5
-    (0, 128, 128),     # 6
-    (128, 128, 128),   # 7
-    (64, 0, 0),        # 8
-    (192, 0, 0),       # 9
-    (64, 128, 0),      # 10
-    (192, 128, 0),     # 11
-    (64, 0, 128),      # 12
-    (192, 0, 128),     # 13
+    (0, 0, 0),          # 0 background - black
+    (230, 25, 75),      # 1 Amandina - strong red
+    (60, 180, 75),      # 2 Arabia - green
+    (255, 225, 25),     # 3 Comtesse - yellow
+    (0, 130, 200),      # 4 Creme brulee - blue
+    (245, 130, 48),     # 5 Jelly Black - orange
+    (145, 30, 180),     # 6 Jelly Milk - purple
+    (128, 128, 128),    # 7 Jelly White - grey
+    (70, 240, 240),     # 8 Noblesse - cyan
+    (240, 50, 230),     # 9 Noir authentique - pink/magenta
+    (210, 245, 60),     # 10 Passion au lait - lime/yellow-green
+    (250, 190, 190),    # 11 Stracciatella - light pink
+    (0, 128, 128),      # 12 Tentation Noir - teal
+    (255, 215, 180),    # 13 Triangolo - peach
 ]
+
 
 VOC_CLASSES = [
     "background", "Amandina", "Arabia", "Comtesse", "Creme brulee",
@@ -31,14 +34,49 @@ VOC_CLASSES = [
     "Passion au lait", "Stracciatella", "Tentation Noir", "Triangolo"
 ]
 
-# Resize + preserve integer mask labels
+class ResizeLongestSide:
+    def __init__(self, longest=512):
+        self.longest = longest
+
+    def __call__(self, img):
+        w, h = img.size
+        scale = self.longest / max(w, h)
+        new_w = int(round(w * scale))
+        new_h = int(round(h * scale))
+        return img.resize((new_w, new_h), resample=Image.BILINEAR)
+    
 class MaskTransform:
-    def __init__(self, size=(512, 512)):
-        self.size = size
+    def __init__(self):
+        self.resize = ResizeLongestSide(512)
 
     def __call__(self, mask):
-        mask = mask.resize(self.size, resample=Image.NEAREST)
+        mask = self.resize(mask)
         return torch.as_tensor(np.array(mask), dtype=torch.long)
+    
+from torchvision.datasets.vision import VisionDataset
+
+class VOCInferenceDataset(VisionDataset):
+    def __init__(self, root, image_set="test", transforms=None):
+        super().__init__(root, transforms=transforms)
+        base_dir = os.path.join(root, "VOC2007")
+        image_dir = os.path.join(base_dir, "JPEGImages")
+        splits_dir = os.path.join(base_dir, "ImageSets", "Segmentation")
+        
+        with open(os.path.join(splits_dir, image_set + ".txt"), "r") as f:
+            file_names = [x.strip() for x in f.readlines()]
+
+        self.images = [os.path.join(image_dir, f"{x}.jpg") for x in file_names]
+
+    def __len__(self):
+        return len(self.images)
+
+    def __getitem__(self, index):
+        img = Image.open(self.images[index]).convert("RGB")
+        if self.transforms is not None:
+            img = self.transforms(img)
+        return img, self.images[index]  # return path for reference
+
+
 
 # Decode class indices into RGB image
 def decode_segmap(mask, colormap=VOC_COLORMAP):
@@ -57,23 +95,33 @@ def create_legend(classes, colormap):
     return legend_patches
 
 # Paths
-data_folder = "data"
-model_path = "model/unet-voc.pt"
-shuffle_data_loader = False
+data_folder = "data/Vocdevkit/"
+model_path = "model/unet-epoch60.pt"
+shuffle_data_loader = True
 
 # Transforms
-transform = transforms.Compose([transforms.Resize((512, 512)), transforms.ToTensor()])
-target_transform = MaskTransform(size=(512, 512))
+#transform = transforms.Compose([transforms.Resize((512, 512)), transforms.ToTensor()])
+transform = transforms.Compose([
+    ResizeLongestSide(512),
+    transforms.ToTensor()
+])
+target_transform = MaskTransform()
 
 # Dataset
-dataset = datasets.VOCSegmentation(
-    data_folder,
-    year="2007",
-    download=False,
-    image_set="train",
-    transform=transform,
-    target_transform=target_transform,
+# dataset = datasets.VOCSegmentation(
+#     data_folder,
+#     year="2007",
+#     download=False,
+#     image_set="test",
+#     transform=transform,
+#     target_transform=target_transform,
+# )
+dataset = VOCInferenceDataset(
+    root="data/Vocdevkit/",
+    image_set="test",
+    transforms=transform
 )
+
 
 # Prediction and visualization
 def predict():
@@ -83,7 +131,9 @@ def predict():
 
     cell_dataset = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=shuffle_data_loader)
 
-    for i, (input, _) in enumerate(cell_dataset):
+    #for i, (input, _) in enumerate(cell_dataset):
+    for i, (input, path) in enumerate(cell_dataset):
+
         with torch.no_grad():
             output = model(input)
 

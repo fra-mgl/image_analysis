@@ -56,7 +56,7 @@ model_folder = Path("model")
 model_folder.mkdir(exist_ok=True)
 model_path = "model/unet-voc.pt"
 saving_interval = 5
-epoch_number = 30
+epoch_number = 60
 shuffle_data_loader = True
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -79,7 +79,7 @@ print("Defining transform...")
 transform = transforms.Compose([
     ResizeLongestSide(512),
     transforms.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.2),
-    transforms.GaussianBlur(kernel_size=3, sigma=(0.5, 1.5)),
+    transforms.GaussianBlur(kernel_size=5, sigma=(1, 2)),
     transforms.ToTensor(),
     transforms.RandomErasing(p=0.3)
 ])
@@ -133,7 +133,7 @@ def train():
             #loss = criterion(output, target)
             loss_ce = ce_loss(output, target)
             loss_dice = dice_loss(output, target)
-            loss = 0.7 * loss_ce + 0.3 * loss_dice
+            loss = 0.5 * loss_ce + 0.5* loss_dice #before 0.7 and 0.3
             loss.backward()
             optimizer.step()
             
