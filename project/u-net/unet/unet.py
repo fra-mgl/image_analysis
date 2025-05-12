@@ -4,20 +4,21 @@ import torch.nn.functional as F
 
 
 class DoubleConv(nn.Module):
-    def __init__(self, in_ch, out_ch):
+    def __init__(self, in_ch, out_ch, dilation=1):
         super(DoubleConv, self).__init__()
+        padding = dilation  # keep output size consistent
         self.conv = nn.Sequential(
-            nn.Conv2d(in_ch, out_ch, kernel_size=3,dilation=2, padding=2),
+            nn.Conv2d(in_ch, out_ch, kernel_size=3, padding=padding, dilation=dilation),
             nn.BatchNorm2d(out_ch),
             nn.ReLU(inplace=True),
-            nn.Conv2d(out_ch, out_ch, kernel_size=3, dilation=2, padding=2),
+            nn.Conv2d(out_ch, out_ch, kernel_size=3, padding=padding, dilation=dilation),
             nn.BatchNorm2d(out_ch),
             nn.ReLU(inplace=True),
         )
 
     def forward(self, x):
-        x = self.conv(x)
-        return x
+        return self.conv(x)
+
 
 
 class Up(nn.Module):
@@ -37,35 +38,35 @@ class Up(nn.Module):
 
 
 class DownLayer(nn.Module):
-    def __init__(self, in_ch, out_ch):
+    def __init__(self, in_ch, out_ch, dilation=1):
         super(DownLayer, self).__init__()
-        self.pool = nn.MaxPool2d(2, stride=2, padding=0)
-        self.conv = DoubleConv(in_ch, out_ch)
+        self.pool = nn.MaxPool2d(2, stride=2)
+        self.conv = DoubleConv(in_ch, out_ch, dilation=dilation)
 
     def forward(self, x):
-        x = self.conv(self.pool(x))
-        return x
+        return self.conv(self.pool(x))
 
 
 class UpLayer(nn.Module):
     def __init__(self, in_ch, out_ch):
         super(UpLayer, self).__init__()
         self.up = Up(in_ch, out_ch)
-        self.conv = DoubleConv(in_ch, out_ch)
+        self.conv = DoubleConv(in_ch, out_ch)  # dilation defaults to 1
 
     def forward(self, x1, x2):
-        a = self.up(x1, x2)
-        x = self.conv(a)
-        return x
+        x = self.up(x1, x2)
+        return self.conv(x)
+
 
 class UNet(nn.Module):
     def __init__(self, input_channels=3, base_channels=50, dimensions=14):
         super(UNet, self).__init__()
 
         # 3-level U-Net (shallower)
-        self.conv1 = DoubleConv(input_channels, base_channels)
-        self.down1 = DownLayer(base_channels, base_channels * 2)
-        self.down2 = DownLayer(base_channels * 2, base_channels * 4)
+        self.conv1 = DoubleConv(input_channels, base_channels)                  # dilation=1
+        self.down1 = DownLayer(base_channels, base_channels * 2, dilation=1)   # standard
+        self.down2 = DownLayer(base_channels * 2, base_channels * 4, dilation=2)  # apply dilation here
+
 
         self.up1 = UpLayer(base_channels * 4, base_channels * 2)
         self.up2 = UpLayer(base_channels * 2, base_channels)
