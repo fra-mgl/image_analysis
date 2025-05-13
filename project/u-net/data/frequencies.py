@@ -15,7 +15,7 @@ def compute_class_frequencies(mask_dir, num_classes=14):
 
 def compute_class_weights():
 
-    counts = compute_class_frequencies("data/VOCdevkit/VOC2007/SegmentationClass", num_classes=14)
+    counts = compute_class_frequencies("data/VOCdevkit/VOC2007/ImageSets/SegmentationClass", num_classes=14)
     weights = 1.0 / (counts + 1e-6)
     weights[0] = weights[1:].min()  # match it to the rarest non-background class
     weights[1] *= 2.0
