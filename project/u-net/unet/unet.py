@@ -108,3 +108,5 @@ class UNet(nn.Module):
         x = self.up1(x2, x3)
         x = self.up2(x1, x)
         x = self.last_conv(x)
+
+        return x

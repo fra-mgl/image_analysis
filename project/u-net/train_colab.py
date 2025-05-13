@@ -123,7 +123,7 @@ def train(params):
         target_transform=target_transform,
         )
 
-    weights = torch.tensor(compute_class_weights(), dtype=torch.float32).to(device)
+    #weights = torch.tensor(compute_class_weights(), dtype=torch.float32).to(device)
     cell_dataset = torch.utils.data.DataLoader(train_dataset, batch_size=4, shuffle= params.shuffle_data_loader)
     val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=4, shuffle=False)
 
@@ -136,7 +136,7 @@ def train(params):
 
     optimizer = optim.RMSprop(model.parameters(), lr=0.0001, weight_decay=1e-8, momentum=0.9)
     
-    ce_loss = nn.CrossEntropyLoss(weight=weights)
+    ce_loss = nn.CrossEntropyLoss()
     dice_loss = DiceLoss()
 
     loss_history = []
