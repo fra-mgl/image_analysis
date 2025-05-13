@@ -7,10 +7,10 @@ class DoubleConv(nn.Module):
     def __init__(self, in_ch, out_ch):
         super(DoubleConv, self).__init__()
         self.conv = nn.Sequential(
-            nn.Conv2d(in_ch, out_ch, kernel_size=3, padding=1),
+            nn.Conv2d(in_ch, out_ch, kernel_size=3,dilation=2, padding=2),
             nn.BatchNorm2d(out_ch),
             nn.ReLU(inplace=True),
-            nn.Conv2d(out_ch, out_ch, kernel_size=3, padding=1),
+            nn.Conv2d(out_ch, out_ch, kernel_size=3, dilation=2, padding=2),
             nn.BatchNorm2d(out_ch),
             nn.ReLU(inplace=True),
         )
@@ -87,7 +87,7 @@ class UpLayer(nn.Module):
 #         return output
 
 class UNet(nn.Module):
-    def __init__(self, input_channels=3, base_channels=48, dimensions=14):
+    def __init__(self, input_channels=3, base_channels=50, dimensions=14):
         super(UNet, self).__init__()
 
         # 3-level U-Net (shallower)
