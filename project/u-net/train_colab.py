@@ -65,7 +65,7 @@ class DiceLoss(nn.Module):
         dice_score = (2. * intersection + self.smooth) / (cardinality + self.smooth)
         return 1. - dice_score.mean()
 
-def validate(model, val_loader, ce_loss, dice_loss):
+def validate(model, val_loader, ce_loss, dice_loss, device):
     model.eval()
     val_loss = 0.0
 
@@ -171,7 +171,7 @@ def train(params):
                 print(f"  Batch {i:3d} | Loss: {loss.item():.4f}")
 
         avg_loss = epoch_loss / len(cell_dataset)
-        val_avg_loss = validate(model, val_loader, ce_loss, dice_loss)
+        val_avg_loss = validate(model, val_loader, ce_loss, dice_loss, device)
         loss_history.append(avg_loss)
         print(f"✅ Epoch {epoch+1} Average Loss: {avg_loss:.4f}")
         val_loss_history.append(val_avg_loss)
