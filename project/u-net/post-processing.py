@@ -60,12 +60,17 @@ def post_processing(img_path, csv_writer, show):
     for i in range(1, label_num+1):
         region = mask[label_image==i].ravel()
         class_extract = np.bincount(region).argmax()
-        prediction_counts[class_extract] += 1        
-        improved_mask[label_image==i] = class_extract
+        if class_extract >= 14:
+            print(class_extract, int(filename.split('.')[0][1:]))
+            print(np.unique(mask))
+        else:
+            prediction_counts[class_extract] += 1        
+            improved_mask[label_image==i] = class_extract
 
 
     # append to csv
-    id_image = int(filename.split('_')[0][1:])
+    # id_image = int(filename.split('_')[0][1:])
+    id_image = int(filename.split('.')[0][1:])
     row = [id_image]
     for label in csv_column_order:
         index = VOCEnum[label].value
@@ -77,7 +82,7 @@ def post_processing(img_path, csv_writer, show):
     if show:
         plt.figure(figsize=(20,8))
         plt.subplot(2, 2, 1)
-        plt.imshow(imread(os.path.join("data/VOCdevkit/VOC2007/JPEGImages", img_path )))
+        plt.imshow(imread(os.path.join("data/VOCdevkit/VOC2007/JPEGImagesTest/test", img_path )))
         plt.title(f"Input Image {id_image}")
         plt.axis("off")
 
@@ -117,6 +122,6 @@ if __name__ == '__main__':
             for entry in entries:
                 if entry.is_file() and entry.name.lower().endswith('.jpg'):
                     filename = os.path.basename(entry.path)
-                    post_processing(filename, writer, show=False)
+                    post_processing(filename, writer, show=True)
                 
                     

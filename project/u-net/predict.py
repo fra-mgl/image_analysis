@@ -10,6 +10,7 @@ import os
 from torchvision.datasets.vision import VisionDataset
 
 import cv2
+import time
 
 
 # Define VOC colormap and class names (14 classes)
@@ -62,7 +63,7 @@ class VOCInferenceDataset(VisionDataset):
     def __init__(self, root, image_set="test", transforms=None):
         super().__init__(root, transforms=transforms)
         base_dir = os.path.join(root, "VOC2007")
-        image_dir = os.path.join(base_dir, "JPEGImages")
+        image_dir = os.path.join(base_dir, "JPEGImagesTest/test")
         splits_dir = os.path.join(base_dir, "ImageSets", "Segmentation")
         
         with open(os.path.join(splits_dir, image_set + ".txt"), "r") as f:
@@ -121,7 +122,7 @@ target_transform = MaskTransform()
 # )
 dataset = VOCInferenceDataset(
     root="data/VOCdevkit/",
-    image_set="train",
+    image_set="test",
     transforms=transform
 )
 
@@ -170,9 +171,13 @@ def predict():
         plt.show()
         '''
 
-        if i >= 10:
-            break
+        # if i >= 10:
+        #     break
 
 if __name__ == "__main__":
+    start_time = time.time()
     predict()
+    end_time = time.time()
+    execution_time = end_time - start_time
+    print(f"Execution time: {execution_time:.6f} seconds")
 
