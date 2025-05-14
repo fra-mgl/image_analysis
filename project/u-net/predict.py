@@ -9,6 +9,9 @@ from matplotlib.patches import Patch
 import os
 from torchvision.datasets.vision import VisionDataset
 
+import cv2
+
+
 # Define VOC colormap and class names (14 classes)
 VOC_COLORMAP = [
     (0, 0, 0),          # 0 background - black
@@ -95,7 +98,7 @@ def create_legend(classes, colormap):
     return legend_patches
 
 # Paths
-data_folder = "data/Vocdevkit/"
+data_folder = "data/VOCdevkit/"
 model_path = "model/unet-epoch60.pt"
 shuffle_data_loader = True
 
@@ -117,8 +120,8 @@ target_transform = MaskTransform()
 #     target_transform=target_transform,
 # )
 dataset = VOCInferenceDataset(
-    root="data/Vocdevkit/",
-    image_set="test",
+    root="data/VOCdevkit/",
+    image_set="train",
     transforms=transform
 )
 
@@ -142,6 +145,11 @@ def predict():
         output_array = output.argmax(dim=1).squeeze().numpy().astype(np.uint8)
         output_rgb = decode_segmap(output_array)
 
+        # store predicted mask
+        filename = os.path.basename(path[0])
+        cv2.imwrite(f"./predict_output/{filename}", output_array)
+        
+        '''
         # Plot input and colored segmentation
         plt.figure(figsize=(15, 5))
         plt.subplot(1, 2, 1)
@@ -160,6 +168,7 @@ def predict():
 
         plt.tight_layout()
         plt.show()
+        '''
 
         if i >= 10:
             break
