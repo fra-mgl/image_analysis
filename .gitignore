@@ -407,10 +407,10 @@ ctranspath.py
 data/data_lab_03/part_02/dhmc*
 convert.py 
 data/project/
-<<<<<<< Updated upstream
-=======
 
 project/dataset_project_iapr2025
 project/u-net/model
 project/u-net/data/VOCdevkit
->>>>>>> Stashed changes
+project/u-net/predict_output/L*
+project/u-net/submission.csv
+
