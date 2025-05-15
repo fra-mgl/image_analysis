@@ -63,7 +63,7 @@ class VOCInferenceDataset(VisionDataset):
     def __init__(self, root, image_set="test", transforms=None):
         super().__init__(root, transforms=transforms)
         base_dir = os.path.join(root, "VOC2007")
-        image_dir = os.path.join(base_dir, "JPEGImagesTest/test")
+        image_dir = os.path.join(base_dir, "JPEGImages")
         splits_dir = os.path.join(base_dir, "ImageSets", "Segmentation")
         
         with open(os.path.join(splits_dir, image_set + ".txt"), "r") as f:
@@ -100,7 +100,7 @@ def create_legend(classes, colormap):
 
 # Paths
 data_folder = "data/VOCdevkit/"
-model_path = "model/unet-epoch60.pt"
+model_path = "model/unet_voc80.pt"
 shuffle_data_loader = True
 
 # Transforms
@@ -137,6 +137,10 @@ def predict():
 
     #for i, (input, _) in enumerate(cell_dataset):
     for i, (input, path) in enumerate(cell_dataset):
+        # filename = os.path.basename(path[0])
+        # filename = filename.split('.')[0]
+        # if filename != 'L1000760':
+        #     continue
 
         with torch.no_grad():
             output = model(input)
@@ -148,7 +152,10 @@ def predict():
 
         # store predicted mask
         filename = os.path.basename(path[0])
-        cv2.imwrite(f"./predict_output/{filename}", output_array)
+        filename = filename.split('.')[0]
+        # cv2.imwrite(f"./predict_output/{filename}.png", output_array, )
+        img = Image.fromarray(output_array, mode='L')
+        img.save(f"./predict_output/{filename}.png")
         
         '''
         # Plot input and colored segmentation

@@ -7,6 +7,7 @@ import numpy as np
 from skimage.morphology import remove_small_objects, remove_small_holes, closing, disk, opening, erosion
 import matplotlib.pyplot as plt
 from matplotlib.patches import Patch
+from PIL import Image
 
 from predict import decode_segmap, VOC_CLASSES, VOC_COLORMAP
 from enum import Enum
@@ -45,7 +46,9 @@ csv_column_order = [
 ]
 
 def post_processing(img_path, csv_writer, show):
-    mask = imread(os.path.join("./predict_output", img_path))
+    # mask = imread(os.path.join("./predict_output", img_path))
+    img = Image.open(os.path.join("./predict_output", img_path)).convert('L')
+    mask = np.array(img, dtype=np.uint8)
     
     binary_img = mask > 0
     binary_img = remove_small_holes(binary_img) 
@@ -70,7 +73,7 @@ def post_processing(img_path, csv_writer, show):
 
     # append to csv
     # id_image = int(filename.split('_')[0][1:])
-    id_image = int(filename.split('.')[0][1:])
+    id_image = int(img_path.split('.')[0][1:])
     row = [id_image]
     for label in csv_column_order:
         index = VOCEnum[label].value
@@ -82,7 +85,7 @@ def post_processing(img_path, csv_writer, show):
     if show:
         plt.figure(figsize=(20,8))
         plt.subplot(2, 2, 1)
-        plt.imshow(imread(os.path.join("data/VOCdevkit/VOC2007/JPEGImagesTest/test", img_path )))
+        plt.imshow(imread(os.path.join("data/VOCdevkit/VOC2007/JPEGImages", 'L'+str(id_image)+'.JPG' )))
         plt.title(f"Input Image {id_image}")
         plt.axis("off")
 
@@ -118,10 +121,13 @@ if __name__ == '__main__':
         writer = csv.writer(csv_file)
         writer.writerow(['id', 'Jelly White', 'Jelly Milk', 'Jelly Black', 'Amandina', 'Crème brulée', 'Triangolo', 'Tentation noir', 'Comtesse', 'Noblesse', 'Noir authentique', 'Passion au lait', 'Arabia', 'Stracciatella'])
 
+        # post_processing('L1000760.png', writer, show=True)
+        # exit(0)
+
         with os.scandir(folder_path) as entries:
             for entry in entries:
-                if entry.is_file() and entry.name.lower().endswith('.jpg'):
+                if entry.is_file() and entry.name.lower().endswith('.png'):
                     filename = os.path.basename(entry.path)
-                    post_processing(filename, writer, show=True)
+                    post_processing(filename, writer, show=False)
                 
                     
