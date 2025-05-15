@@ -6,6 +6,8 @@ from torch import nn
 from torchvision import transforms, utils, datasets
 import numpy as np
 from PIL import Image
+import cv2
+from torchvision.transforms import functional as F
 # 
 import matplotlib.pyplot as plt
 from unet.unet import UNet
@@ -26,7 +28,24 @@ class TrainingParams():
         self.epoch_number = epoch_number
         self.shuffle_data_loader = shuffle
   
+class BilateralFilter:
+    def __init__(self, d=15, sigma_color=75, sigma_space=75):
+        self.d = d
+        self.sigma_color = sigma_color
+        self.sigma_space = sigma_space
 
+    def __call__(self, img):
+        # Convert PIL Image to NumPy array
+        img_np = np.array(img)
+
+        # Apply bilateral filter (for 3-channel color images)
+        if img_np.ndim == 3:
+            filtered = cv2.bilateralFilter(img_np, self.d, self.sigma_color, self.sigma_space)
+        else:
+            filtered = img_np  # skip for grayscale
+
+        # Convert back to PIL Image
+        return Image.fromarray(filtered)
 
 class ResizeLongestSide:
     def __init__(self, longest=512):
@@ -89,12 +108,18 @@ def train(params):
 
     #1. Define transform
     print("Defining transform...")
+    # transform = transforms.Compose([
+    #     ResizeLongestSide(512),
+    #     transforms.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.2),
+    #     transforms.GaussianBlur(kernel_size=5, sigma=(1, 2)),
+    #     transforms.ToTensor(),
+    #     transforms.RandomErasing(p=0.3)
+    # ])
     transform = transforms.Compose([
-        ResizeLongestSide(512),
-        transforms.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.2),
-        transforms.GaussianBlur(kernel_size=5, sigma=(1, 2)),
-        transforms.ToTensor(),
-        transforms.RandomErasing(p=0.3)
+    ResizeLongestSide(512),
+    BilateralFilter(),  # 👈 Add this before ToTensor
+    transforms.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.2),
+    transforms.ToTensor()
     ])
 
     val_transform = transforms.Compose([
@@ -123,7 +148,7 @@ def train(params):
         target_transform=target_transform,
         )
 
-    #weights = torch.tensor(compute_class_weights(params.data_folder), dtype=torch.float32).to(device)
+    weights = torch.tensor(compute_class_weights(params.data_folder), dtype=torch.float32).to(device)
     #print("Class Weights:", weights)
     cell_dataset = torch.utils.data.DataLoader(train_dataset, batch_size=4, shuffle= params.shuffle_data_loader)
     val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=4, shuffle=False)
@@ -137,11 +162,13 @@ def train(params):
 
     optimizer = optim.RMSprop(model.parameters(), lr=0.0001, weight_decay=1e-8, momentum=0.9)
     
-    ce_loss = nn.CrossEntropyLoss() #
+    ce_loss = nn.CrossEntropyLoss(weight = weights) #
     dice_loss = DiceLoss()
 
     loss_history = []
     val_loss_history = []
+    best_val_loss = float('inf')
+    best_model_path = f"{params.model_path}_best.pt"
 
     for epoch in range(params.epoch_number):
         print(f"\n🔁 Epoch {epoch+1}/{params.epoch_number}")
@@ -174,13 +201,16 @@ def train(params):
         avg_loss = epoch_loss / len(cell_dataset)
         val_avg_loss = validate(model, val_loader, ce_loss, dice_loss, device)
         loss_history.append(avg_loss)
-        print(f"✅ Epoch {epoch+1} Average Loss: {avg_loss:.4f}")
         val_loss_history.append(val_avg_loss)
         print(f"✅ Epoch {epoch+1} | Train Loss: {avg_loss:.4f} | Val Loss: {val_avg_loss:.4f}")
 
         # Save model at intervals
         if (epoch + 1) % params.saving_interval == 0:
             torch.save(model.state_dict(), f"{params.model_path}{epoch+1}.pt")
+        if val_avg_loss < best_val_loss:
+            best_val_loss = val_avg_loss
+            torch.save(model.state_dict(), best_model_path)
+            print(f"💾 Best model saved with val loss {val_avg_loss:.4f}")
 
 
     # Final model save

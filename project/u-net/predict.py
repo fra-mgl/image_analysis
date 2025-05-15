@@ -95,8 +95,8 @@ def create_legend(classes, colormap):
     return legend_patches
 
 # Paths
-data_folder = "data/Vocdevkit/"
-model_path = "model/full_data4_work/unet-epoch55.pt"
+data_folder = "data/VOCdevkit/"
+model_path = "model/Colab1/unet_voc80.pt"
 shuffle_data_loader = True
 
 # Transforms
@@ -117,7 +117,7 @@ target_transform = MaskTransform()
 #     target_transform=target_transform,
 # )
 dataset = VOCInferenceDataset(
-    root="data/Vocdevkit/",
+    root=data_folder,
     image_set="test",
     transforms=transform
 )
