@@ -149,7 +149,8 @@ def train(params):
         )
 
     weights = torch.tensor(compute_class_weights(params.data_folder), dtype=torch.float32).to(device)
-    #print("Class Weights:", weights)
+
+    print("Class Weights:", weights)
     cell_dataset = torch.utils.data.DataLoader(train_dataset, batch_size=4, shuffle= params.shuffle_data_loader)
     val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=4, shuffle=False)
 
