@@ -96,7 +96,7 @@ def create_legend(classes, colormap):
 
 # Paths
 data_folder = "data/Vocdevkit/"
-model_path = "model/unet-epoch60.pt"
+model_path = "model/full_data4_work/unet-epoch55.pt"
 shuffle_data_loader = True
 
 # Transforms
@@ -161,7 +161,7 @@ def predict():
         plt.tight_layout()
         plt.show()
 
-        if i >= 10:
+        if i >= 20:
             break
 
 if __name__ == "__main__":
