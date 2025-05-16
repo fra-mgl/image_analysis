@@ -87,26 +87,35 @@ class UpLayer(nn.Module):
 #         return output
 
 class UNet(nn.Module):
-    def __init__(self, input_channels=3, base_channels=50, dimensions=14):
+    def __init__(self, input_channels=3, base_channels=64, dimensions=14):
         super(UNet, self).__init__()
 
         # 3-level U-Net (shallower)
         self.conv1 = DoubleConv(input_channels, base_channels)
         self.down1 = DownLayer(base_channels, base_channels * 2)
         self.down2 = DownLayer(base_channels * 2, base_channels * 4)
-
-        self.up1 = UpLayer(base_channels * 4, base_channels * 2)
-        self.up2 = UpLayer(base_channels * 2, base_channels)
+        self.down3 = DownLayer(base_channels * 4, base_channels * 8)
+        self.up1 = UpLayer(base_channels * 8, base_channels * 4)
+        self.up2 = UpLayer(base_channels * 4, base_channels * 2)
+        self.up3 = UpLayer(base_channels * 2, base_channels)
 
         self.last_conv = nn.Conv2d(base_channels, dimensions, kernel_size=1)
 
     def forward(self, x):
-        x1 = self.conv1(x)
-        x2 = self.down1(x1)
-        x3 = self.down2(x2)
+        x1 = self.conv1(x)       # base_channels
+        x2 = self.down1(x1)      # base_channels * 2
+        x3 = self.down2(x2)      # base_channels * 4
+        x4 = self.down3(x3)      # base_channels * 8
 
-        x = self.up1(x2, x3)
-        x = self.up2(x1, x)
+        x = self.up1(x3, x4)     # up1: (x3 from encoder, x4 from decoder)
+        x = self.up2(x2, x)      # up2: (x2 from encoder, x from previous)
+        x = self.up3(x1, x)      # up3: (x1 from encoder, x from previous)
         x = self.last_conv(x)
-
         return x
+    
+# if __name__ == "__main__":
+#     # Example usage
+#     model = UNet(dimensions=14)
+#     total_params = sum(p.numel() for p in model.parameters() )
+#     print(f"Total parameters: {total_params}")
+    

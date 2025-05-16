@@ -19,20 +19,22 @@ torch.manual_seed(42)
 np.random.seed(42)
 
 class TrainingParams():
-    def __init__(self, data_folder, model_folder,  epoch_number, saving_interval, shuffle = True):
+    def __init__(self, data_folder, model_folder,  epoch_number, saving_interval, bilateral_parameters, shuffle = True):
         self.data_folder = data_folder
         self.model_folder = Path(model_folder)
         self.model_folder.mkdir(exist_ok=True)
         self.model_path = model_folder + "unet_voc"
         self.saving_interval = saving_interval
         self.epoch_number = epoch_number
+        self.bilateral_parameters = bilateral_parameters
         self.shuffle_data_loader = shuffle
+        
   
-class BilateralFilter:
-    def __init__(self, d=15, sigma_color=75, sigma_space=75):
-        self.d = d
-        self.sigma_color = sigma_color
-        self.sigma_space = sigma_space
+class BilateralFilter():
+    def __init__(self,params):
+        self.d = params.bilateral_parameters[0]
+        self.sigma_color = params.bilateral_parameters[1]
+        self.sigma_space = params.bilateral_parameters[2]
 
     def __call__(self, img):
         # Convert PIL Image to NumPy array
@@ -117,7 +119,7 @@ def train(params):
     # ])
     transform = transforms.Compose([
     ResizeLongestSide(512),
-    BilateralFilter(),  # 👈 Add this before ToTensor
+    BilateralFilter(params),  
     transforms.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.2),
     transforms.ToTensor()
     ])
@@ -238,6 +240,7 @@ if __name__ == "__main__":
         model_folder="model/",
         epoch_number=30,
         saving_interval=10,
+        bilateral_parameters=(5, 75, 75),  # d, sigma_color, sigma_space
         shuffle=True
     )
     train(params)
