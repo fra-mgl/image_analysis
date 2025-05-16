@@ -136,19 +136,20 @@ val_dataset = datasets.VOCSegmentation(
     target_transform=target_transform,
 )
 
-weights = torch.tensor(compute_class_weights(), dtype=torch.float32).to(device)
+#weights = torch.tensor(compute_class_weights(), dtype=torch.float32).to(device)
 
 
 def train():
-    cell_dataset = torch.utils.data.DataLoader(train_dataset, batch_size=4, shuffle=shuffle_data_loader)
-    val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=4, shuffle=False)
-
-
+    
     print("Defining model...")
     model = UNet(dimensions=14)
-    total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    total_params = sum(p.numel() for p in model.parameters() )
     print(f"Total parameters: {total_params}")
     model.to(device)
+    exit(0)
+
+    cell_dataset = torch.utils.data.DataLoader(train_dataset, batch_size=4, shuffle=shuffle_data_loader)
+    val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=4, shuffle=False)
 
     optimizer = optim.RMSprop(model.parameters(), lr=0.0001, weight_decay=1e-8, momentum=0.9)
     # criterion = nn.CrossEntropyLoss()
