@@ -100,7 +100,7 @@ def create_legend(classes, colormap):
 
 # Paths
 data_folder = "data/VOCdevkit/"
-model_path = "model/unet_voc80.pt"
+model_path = "model/unet_voc90.pt"
 shuffle_data_loader = True
 
 # Transforms
@@ -121,7 +121,7 @@ target_transform = MaskTransform()
 #     target_transform=target_transform,
 # )
 dataset = VOCInferenceDataset(
-    root="data/VOCdevkit/",
+    root=data_folder,
     image_set="test",
     transforms=transform
 )
@@ -151,13 +151,13 @@ def predict():
         output_rgb = decode_segmap(output_array)
 
         # store predicted mask
-        filename = os.path.basename(path[0])
-        filename = filename.split('.')[0]
-        # cv2.imwrite(f"./predict_output/{filename}.png", output_array, )
-        img = Image.fromarray(output_array, mode='L')
-        img.save(f"./predict_output/{filename}.png")
+        # filename = os.path.basename(path[0])
+        # filename = filename.split('.')[0]
+        # # cv2.imwrite(f"./predict_output/{filename}.png", output_array, )
+        # img = Image.fromarray(output_array, mode='L')
+        # img.save(f"./predict_output/{filename}.png")
         
-        '''
+        
         # Plot input and colored segmentation
         plt.figure(figsize=(15, 5))
         plt.subplot(1, 2, 1)
@@ -176,10 +176,10 @@ def predict():
 
         plt.tight_layout()
         plt.show()
-        '''
+        
 
-        # if i >= 10:
-        #     break
+        if i >= 10:
+             break
 
 if __name__ == "__main__":
     start_time = time.time()

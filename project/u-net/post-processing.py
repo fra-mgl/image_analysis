@@ -128,6 +128,6 @@ if __name__ == '__main__':
             for entry in entries:
                 if entry.is_file() and entry.name.lower().endswith('.png'):
                     filename = os.path.basename(entry.path)
-                    post_processing(filename, writer, show=False)
+                    post_processing(filename, writer, show=True)
                 
                     
