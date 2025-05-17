@@ -61,12 +61,14 @@ area_threshold = {
     13: 1761
 }
 
+area_scaling = 0.93
 
 def count_instances(area, cls):
     # print("Class: ", VOC_LABELS[cls])
     # print("area: ", area)
     # print("res: ", np.round(area / area_threshold[cls], 0))
-    return np.round(area / area_threshold[cls], 0)
+    # print(cls, area / (area_scaling*area_threshold[cls]))
+    return np.round(area / (area_scaling*area_threshold[cls]), 0)
 
 def post_processing(img_path, csv_writer, show):
     # mask = imread(os.path.join("./predict_output", img_path))
@@ -121,7 +123,7 @@ def post_processing(img_path, csv_writer, show):
     
 
     if show:
-        plt.figure(figsize=(20,8))
+        plt.figure(figsize=(18,8))
         plt.subplot(2, 2, 1)
         plt.imshow(imread(os.path.join("data/VOCdevkit/VOC2007/JPEGImages", 'L'+str(id_image)+'.JPG' )))
         plt.title(f"Input Image {id_image}")
@@ -170,12 +172,16 @@ if __name__ == '__main__':
             for entry in entries:
                 if entry.is_file() and entry.name.lower().endswith('.png'):
 
+                    filename = os.path.basename(entry.path)
+                    post_processing(filename, writer, show=False)
+
                     # i += 1
 
                     # if i < 20:
                     #     continue
-                    filename = os.path.basename(entry.path)
-                    post_processing(filename, writer, show=False)
+                    # if round(np.random.random(),0):
+                    #     filename = os.path.basename(entry.path)
+                    #     post_processing(filename, writer, show=True)
 
 
                     
