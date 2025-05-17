@@ -120,7 +120,7 @@ def train(params):
     transform = transforms.Compose([
     ResizeLongestSide(512),
     BilateralFilter(params),  
-    transforms.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.2),
+    #transforms.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.2),
     transforms.ToTensor()
     ])
 
@@ -234,13 +234,13 @@ def train(params):
 
 
 
-if __name__ == "__main__":
-    params = TrainingParams(
-        data_folder="data/",
-        model_folder="model/",
-        epoch_number=30,
-        saving_interval=10,
-        bilateral_parameters=(5, 75, 75),  # d, sigma_color, sigma_space
-        shuffle=True
-    )
-    train(params)
+# if __name__ == "__main__":
+#     params = TrainingParams(
+#         data_folder="data/",
+#         model_folder="model/",
+#         epoch_number=30,
+#         saving_interval=10,
+#         bilateral_parameters=(5, 75, 75),  # d, sigma_color, sigma_space
+#         shuffle=True
+#     )
+#     train(params)
