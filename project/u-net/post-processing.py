@@ -92,13 +92,20 @@ def post_processing(img_path, csv_writer, show):
     prediction_counts = np.zeros(14, dtype=int)
     for i in range(1, label_num+1):
         region = mask[label_image==i].ravel()
-        class_extract = np.bincount(region).argmax()
-        if class_extract >= 14:
-            print(class_extract, int(filename.split('.')[0][1:]))
-            print(np.unique(mask))
-        else:
-            prediction_counts[class_extract] += count_instances(np.count_nonzero(region), class_extract)
-            improved_mask[label_image==i] = class_extract
+        # class_extract = np.bincount(region).argmax()
+        # if class_extract >= 14:
+        #     print(class_extract, int(filename.split('.')[0][1:]))
+        #     print(np.unique(mask))
+        # else:
+            # prediction_counts[class_extract] += count_instances(np.count_nonzero(region), class_extract)
+            # improved_mask[label_image==i] = class_extract
+
+
+        class_bins = np.bincount(region)
+        for j, b in enumerate(class_bins):
+                if j < 14 and j != 0 and b != 0:
+                    prediction_counts[j] += count_instances(b, j)
+                    improved_mask[label_image==i] = j            
 
 
 
@@ -162,12 +169,17 @@ if __name__ == '__main__':
         with os.scandir(folder_path) as entries:
             for entry in entries:
                 if entry.is_file() and entry.name.lower().endswith('.png'):
+
+                    # i += 1
+
+                    # if i < 20:
+                    #     continue
                     filename = os.path.basename(entry.path)
                     post_processing(filename, writer, show=False)
 
 
-                    # i += 1
-                    # if i > 10:
+                    
+                    # if i > 40:
                     #     break
                 
                     
