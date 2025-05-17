@@ -120,7 +120,7 @@ def train(params):
     transform = transforms.Compose([
     ResizeLongestSide(512),
     BilateralFilter(params),  
-    #transforms.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.2),
+    transforms.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.3),
     transforms.ToTensor()
     ])
 
