@@ -93,7 +93,11 @@ def post_processing(img_path, csv_writer, show):
 
     prediction_counts = np.zeros(14, dtype=int)
     for i in range(1, label_num+1):
-        region = mask[label_image==i].ravel()
+        # print("-------")
+        region = mask[label_image==i] # .ravel() FIXME is it necessary?
+        region_mask = np.where(label_image==i, mask, 0)
+        # print(np.unique(region_mask))
+        # print(region_mask)
         # class_extract = np.bincount(region).argmax()
         # if class_extract >= 14:
         #     print(class_extract, int(filename.split('.')[0][1:]))
@@ -106,8 +110,10 @@ def post_processing(img_path, csv_writer, show):
         class_bins = np.bincount(region)
         for j, b in enumerate(class_bins):
                 if j < 14 and j != 0 and b != 0:
-                    prediction_counts[j] += count_instances(b, j)
-                    improved_mask[label_image==i] = j            
+                    inst = count_instances(b, j)
+                    prediction_counts[j] += inst
+                    if inst > 0:
+                        improved_mask[region_mask==j] = j            
 
 
 
