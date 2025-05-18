@@ -109,7 +109,7 @@ class TverskyLoss(nn.Module):
         return 1.0 - tversky_index.mean()
 
 
-def validate(model, val_loader, ce_loss, dice_loss, device):
+def validate(model, val_loader, ce_loss, dice_loss,tvwersky_loss, device):
     model.eval()
     val_loss = 0.0
 
@@ -121,7 +121,8 @@ def validate(model, val_loader, ce_loss, dice_loss, device):
             output = model(input)
             loss_ce = ce_loss(output, target)
             loss_dice = dice_loss(output, target)
-            loss = 0.5 * loss_ce + 0.5 * loss_dice
+            tvwersky_loss = tvwersky_loss(output, target)
+            loss = 0.5 * loss_ce + 0.25 * loss_dice + 0.25 * tvwersky_loss
 
             val_loss += loss.item()
 
@@ -189,7 +190,7 @@ def train(params):
     optimizer = optim.RMSprop(model.parameters(), lr=0.0001, weight_decay=1e-8, momentum=0.9)
     
     ce_loss = nn.CrossEntropyLoss(weight = weights) #
-    #dice_loss = DiceLoss()
+    dice_loss = DiceLoss()
     tversky_loss = TverskyLoss()
 
     loss_history = []
@@ -216,9 +217,9 @@ def train(params):
 
             #loss = criterion(output, target)
             loss_ce = ce_loss(output, target)
-            #loss_dice = dice_loss(output, target)
+            loss_dice = dice_loss(output, target)
             loss_tversky = tversky_loss(output, target)
-            loss = 0.5 * loss_ce + 0.5 * loss_tversky
+            loss = 0.5 * loss_ce + 0.25 * loss_tversky +0.25 * loss_dice
             loss.backward()
             optimizer.step()
             
