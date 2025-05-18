@@ -85,6 +85,29 @@ class DiceLoss(nn.Module):
 
         dice_score = (2. * intersection + self.smooth) / (cardinality + self.smooth)
         return 1. - dice_score.mean()
+    
+class TverskyLoss(nn.Module):
+    def __init__(self, alpha=0.35, beta=0.65, smooth=1.0):
+        super(TverskyLoss, self).__init__()
+        self.alpha = alpha
+        self.beta = beta
+        self.smooth = smooth
+
+    def forward(self, logits, targets):
+        num_classes = logits.shape[1]
+        logits = torch.softmax(logits, dim=1)
+        
+        # One-hot encode targets
+        targets_one_hot = torch.nn.functional.one_hot(targets, num_classes).permute(0, 3, 1, 2).float()
+
+        dims = (0, 2, 3)
+        TP = torch.sum(logits * targets_one_hot, dims)
+        FP = torch.sum(logits * (1 - targets_one_hot), dims)
+        FN = torch.sum((1 - logits) * targets_one_hot, dims)
+
+        tversky_index = (TP + self.smooth) / (TP + self.alpha * FP + self.beta * FN + self.smooth)
+        return 1.0 - tversky_index.mean()
+
 
 def validate(model, val_loader, ce_loss, dice_loss, device):
     model.eval()
@@ -120,7 +143,7 @@ def train(params):
     transform = transforms.Compose([
     ResizeLongestSide(512),
     BilateralFilter(params),  
-    transforms.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.3),
+    transforms.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.2),
     transforms.ToTensor()
     ])
 
@@ -166,7 +189,8 @@ def train(params):
     optimizer = optim.RMSprop(model.parameters(), lr=0.0001, weight_decay=1e-8, momentum=0.9)
     
     ce_loss = nn.CrossEntropyLoss(weight = weights) #
-    dice_loss = DiceLoss()
+    #dice_loss = DiceLoss()
+    tversky_loss = TverskyLoss()
 
     loss_history = []
     val_loss_history = []
@@ -192,8 +216,9 @@ def train(params):
 
             #loss = criterion(output, target)
             loss_ce = ce_loss(output, target)
-            loss_dice = dice_loss(output, target)
-            loss = 0.5 * loss_ce + 0.5 * loss_dice
+            #loss_dice = dice_loss(output, target)
+            loss_tversky = tversky_loss(output, target)
+            loss = 0.5 * loss_ce + 0.5 * loss_tversky
             loss.backward()
             optimizer.step()
             
@@ -202,7 +227,7 @@ def train(params):
                 print(f"  Batch {i:3d} | Loss: {loss.item():.4f}")
 
         avg_loss = epoch_loss / len(cell_dataset)
-        val_avg_loss = validate(model, val_loader, ce_loss, dice_loss, device)
+        val_avg_loss = validate(model, val_loader, ce_loss, tversky_loss, device)
         loss_history.append(avg_loss)
         val_loss_history.append(val_avg_loss)
         print(f"✅ Epoch {epoch+1} | Train Loss: {avg_loss:.4f} | Val Loss: {val_avg_loss:.4f}")

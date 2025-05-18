@@ -34,6 +34,7 @@ VOC_CLASSES = [
     "Passion au lait", "Stracciatella", "Tentation Noir", "Triangolo"
 ]
 
+
 class ResizeLongestSide:
     def __init__(self, longest=512):
         self.longest = longest
@@ -96,7 +97,7 @@ def create_legend(classes, colormap):
 
 # Paths
 data_folder = "data/VOCdevkit/"
-model_path = "model/Colab1/unet_voc80.pt"
+model_path = "model/unet_voc_best.pt"
 shuffle_data_loader = True
 
 # Transforms
@@ -133,6 +134,11 @@ def predict():
 
     #for i, (input, _) in enumerate(cell_dataset):
     for i, (input, path) in enumerate(cell_dataset):
+        # Load image
+        # filename = os.path.basename(path[0])
+        # filename = filename.split('.')[0]
+        # if filename != 'L1010044':
+        #     continue
 
         with torch.no_grad():
             output = model(input)
@@ -151,7 +157,7 @@ def predict():
 
         plt.subplot(1, 2, 2)
         plt.imshow(output_rgb)
-        plt.title("Predicted Segmentation")
+        plt.title(f"Predicted Segmentation {path[0]}")
         plt.axis("off")
 
         # Add color legend
@@ -161,7 +167,7 @@ def predict():
         plt.tight_layout()
         plt.show()
 
-        if i >= 20:
+        if i >= 60:
             break
 
 if __name__ == "__main__":

@@ -36,8 +36,7 @@ def compute_class_weights(data_folder, split="train"):
     counts = compute_class_frequencies(mask_dir, mask_list, num_classes=14)
 
     weights = 1.0 / (counts + 1e-6)
-    #weights[0] = weights[1:].min()  # match it to the rarest non-background class
-    #weights[1] *= 2.0
+   
     weights = weights / weights.sum()  # Normalize
 
     return weights

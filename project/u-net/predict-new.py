@@ -100,7 +100,7 @@ def create_legend(classes, colormap):
 
 # Paths
 data_folder = "data/VOCdevkit/"
-model_path = "model/unet_voc80.pt"
+model_path = "model/unet_voc_best_big.pt"
 shuffle_data_loader = True
 
 # Transforms
@@ -150,33 +150,33 @@ def predict():
         output_array = output.argmax(dim=1).squeeze().numpy().astype(np.uint8)
         output_rgb = decode_segmap(output_array)
 
-        # store predicted mask
+        # # store predicted mask
         filename = os.path.basename(path[0])
         filename = filename.split('.')[0]
         # cv2.imwrite(f"./predict_output/{filename}.png", output_array, )
         img = Image.fromarray(output_array, mode='L')
         img.save(f"./predict_output/{filename}.png")
         
-        '''
-        # Plot input and colored segmentation
-        plt.figure(figsize=(15, 5))
-        plt.subplot(1, 2, 1)
-        plt.imshow(input_np)
-        plt.title("Input Image")
-        plt.axis("off")
+        
+        # # Plot input and colored segmentation
+        # plt.figure(figsize=(15, 5))
+        # plt.subplot(1, 2, 1)
+        # plt.imshow(input_np)
+        # plt.title("Input Image")
+        # plt.axis("off")
 
-        plt.subplot(1, 2, 2)
-        plt.imshow(output_rgb)
-        plt.title("Predicted Segmentation")
-        plt.axis("off")
+        # plt.subplot(1, 2, 2)
+        # plt.imshow(output_rgb)
+        # plt.title("Predicted Segmentation")
+        # plt.axis("off")
 
-        # Add color legend
-        legend_patches = create_legend(VOC_CLASSES, VOC_COLORMAP)
-        plt.legend(handles=legend_patches, bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.)
+        # # Add color legend
+        # legend_patches = create_legend(VOC_CLASSES, VOC_COLORMAP)
+        # plt.legend(handles=legend_patches, bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.)
 
-        plt.tight_layout()
-        plt.show()
-        '''
+        # plt.tight_layout()
+        # plt.show()
+        
 
         # if i >= 10:
         #     break
