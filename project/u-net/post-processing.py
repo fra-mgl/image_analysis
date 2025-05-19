@@ -75,17 +75,20 @@ def post_processing(img_path, csv_writer, show):
     img = Image.open(os.path.join("./predict_output", img_path)).convert('L')
     mask = np.array(img, dtype=np.uint8)
     
+    # POST PROCESSING
     binary_img = mask > 0
-    binary_img = opening(binary_img, disk(2))
-    binary_img = remove_small_holes(binary_img) 
-    binary_img = remove_small_objects(binary_img)
+    # binary_img = opening(binary_img, disk(2))
+    binary_img = remove_small_holes(binary_img, 300) 
+    binary_img = remove_small_objects(binary_img, 300)
 
     # binary_img = opening(mask, disk(2))
     # binary_img = closing(mask, disk(1))
     # binary_img = remove_small_holes(binary_img) 
     # binary_img = remove_small_objects(binary_img)
 
-    
+    #  INFERENCE
+
+    # EXTRACT CC
     # Label connected components
     label_image, label_num = measure.label(binary_img, return_num=True)
 
@@ -96,17 +99,17 @@ def post_processing(img_path, csv_writer, show):
         # print("-------")
         region = mask[label_image==i] # .ravel() FIXME is it necessary?
         region_mask = np.where(label_image==i, mask, 0)
-        # print(np.unique(region_mask))
-        # print(region_mask)
+
+        #  ARGMAX
         # class_extract = np.bincount(region).argmax()
         # if class_extract >= 14:
         #     print(class_extract, int(filename.split('.')[0][1:]))
         #     print(np.unique(mask))
         # else:
-            # prediction_counts[class_extract] += count_instances(np.count_nonzero(region), class_extract)
-            # improved_mask[label_image==i] = class_extract
+        #     prediction_counts[class_extract] += 1 #count_instances(np.count_nonzero(region), class_extract)
+        #     improved_mask[label_image==i] = class_extract
 
-
+        # AREA
         class_bins = np.bincount(region)
         for j, b in enumerate(class_bins):
                 if j < 14 and j != 0 and b != 0:
@@ -158,6 +161,22 @@ def post_processing(img_path, csv_writer, show):
         plt.show()
 
 
+        # ======
+        # plt.figure(figsize=(18,8))
+        # plt.subplot(1, 2, 1)
+        # plt.imshow(decode_segmap(mask))
+        # plt.title(f"Predicted Segmentation {id_image}")
+        # plt.axis("off")
+
+        # plt.subplot(1, 2, 2)
+        # plt.imshow(binary_img)
+        # plt.title(f"Binary Segmentation ({label_num} CC)")
+        # plt.axis("off")
+        
+        # plt.tight_layout()
+        # plt.show()
+
+
 
 if __name__ == '__main__':
 
@@ -169,7 +188,12 @@ if __name__ == '__main__':
 
         # post_processing('L1000944.png', writer, show=True)
         # post_processing('L1010028.png', writer, show=True)
-        # post_processing('L1010001.png', writer, show=True)
+        # post_processing('L1000789.png', writer, show=True)
+        # post_processing('L1000978.png', writer, show=True)
+        
+        # post_processing('L1000777.png', writer, show=True)
+        # post_processing('L1010028.png', writer, show=True)
+        # post_processing('L1000978.png', writer, show=True)
 
         # exit(0)
 
