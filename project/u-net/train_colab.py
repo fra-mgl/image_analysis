@@ -121,8 +121,8 @@ def validate(model, val_loader, ce_loss, dice_loss,tvwersky_loss, device):
             output = model(input)
             loss_ce = ce_loss(output, target)
             loss_dice = dice_loss(output, target)
-            tvwersky_loss = tvwersky_loss(output, target)
-            loss = 0.5 * loss_ce + 0.25 * loss_dice + 0.25 * tvwersky_loss
+            loss_tvwersky = tvwersky_loss(output, target)
+            loss = 0.5 * loss_ce + 0.25 * loss_dice + 0.25 * loss_tvwersky
 
             val_loss += loss.item()
 
