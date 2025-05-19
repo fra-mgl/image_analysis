@@ -100,7 +100,7 @@ def create_legend(classes, colormap):
 
 # Paths
 data_folder = "data/VOCdevkit/"
-model_path = "model/unet_voc_best_big.pt"
+model_path = "model/unet_voc_best.pt"
 shuffle_data_loader = True
 
 # Transforms
@@ -129,7 +129,7 @@ dataset = VOCInferenceDataset(
 
 # Prediction and visualization
 def predict():
-    model = UNet(dimensions=14)
+    model = UNet(dimensions=14,save_intermediates=False)
     model.load_state_dict(torch.load(model_path, map_location=torch.device("cpu")))
     model.eval()
 
@@ -137,13 +137,46 @@ def predict():
 
     #for i, (input, _) in enumerate(cell_dataset):
     for i, (input, path) in enumerate(cell_dataset):
-        # filename = os.path.basename(path[0])
-        # filename = filename.split('.')[0]
-        # if filename != 'L1000760':
-        #     continue
+        filename = os.path.basename(path[0])
+        filename = filename.split('.')[0]
+        if filename != 'L1000834':
+            continue
+        print(f"Processing {filename}...")
+
+        
 
         with torch.no_grad():
             output = model(input)
+
+            # Retrieve intermediate outputs
+            # intermediates = model.get_intermediate_outputs()
+
+            # Visualize a specific layer
+            import matplotlib.pyplot as plt
+
+            # layer_name = 'up1'
+            # feature_maps = intermediates[layer_name][0]  # first item in batch
+
+            # # Display first 16 feature maps in a 4x4 grid
+            # # num_features = min(16, feature_maps.shape[0])  # Avoid out-of-bounds
+            # os.makedirs("intermediates", exist_ok=True)
+
+            # for j in intermediates:
+            #     feature_maps = intermediates[j][0]  # first item in batch
+            #     num_features = min(16, feature_maps.shape[0])  # Avoid out-of-bounds
+            #     fig, axs = plt.subplots(4, 4, figsize=(12, 12))
+            #     for i in range(num_features):
+            #         ax = axs[i // 4, i % 4]
+            #         ax.imshow(feature_maps[i].cpu(), cmap='viridis')
+            #         ax.set_title(f"{j} - Feature Map n°{i}")
+            #         ax.axis('off')
+            #         plt.tight_layout()
+            #         plt.savefig(f"./intermediates/{filename}_{j}.png")
+
+            # # plt.show()
+
+
+
 
         # Prepare image and mask
         input_np = (input.squeeze().permute(1, 2, 0).numpy() * 255).astype(np.uint8)
@@ -158,28 +191,28 @@ def predict():
         img.save(f"./predict_output/{filename}.png")
         
         
-        # # Plot input and colored segmentation
-        # plt.figure(figsize=(15, 5))
-        # plt.subplot(1, 2, 1)
-        # plt.imshow(input_np)
-        # plt.title("Input Image")
-        # plt.axis("off")
+        # Plot input and colored segmentation
+        plt.figure(figsize=(15, 5))
+        plt.subplot(1, 2, 1)
+        plt.imshow(input_np)
+        plt.title("Input Image")
+        plt.axis("off")
 
-        # plt.subplot(1, 2, 2)
-        # plt.imshow(output_rgb)
-        # plt.title("Predicted Segmentation")
-        # plt.axis("off")
+        plt.subplot(1, 2, 2)
+        plt.imshow(output_rgb)
+        plt.title("Predicted Segmentation")
+        plt.axis("off")
 
-        # # Add color legend
-        # legend_patches = create_legend(VOC_CLASSES, VOC_COLORMAP)
-        # plt.legend(handles=legend_patches, bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.)
+        # Add color legend
+        legend_patches = create_legend(VOC_CLASSES, VOC_COLORMAP)
+        plt.legend(handles=legend_patches, bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.)
 
-        # plt.tight_layout()
-        # plt.show()
+        plt.tight_layout()
+        plt.show()
         
 
-        # if i >= 10:
-        #     break
+        if i >= 10:
+            break
 
 if __name__ == "__main__":
     start_time = time.time()

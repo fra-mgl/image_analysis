@@ -61,10 +61,13 @@ class UpLayer(nn.Module):
 
 
 class UNet(nn.Module):
-    def __init__(self, input_channels=3, base_channels=64, dimensions=14):
+    def __init__(self, input_channels=3, base_channels=64, dimensions=14, save_intermediates=False):
         super(UNet, self).__init__()
 
-        # 3-level U-Net (shallower)
+        self.save_intermediates = save_intermediates
+        self.intermediate_outputs = {}
+
+        # Layers
         self.conv1 = DoubleConv(input_channels, base_channels)
         self.down1 = DownLayer(base_channels, base_channels * 2)
         self.down2 = DownLayer(base_channels * 2, base_channels * 4)
@@ -76,16 +79,35 @@ class UNet(nn.Module):
         self.last_conv = nn.Conv2d(base_channels, dimensions, kernel_size=1)
 
     def forward(self, x):
-        x1 = self.conv1(x)       # base_channels
-        x2 = self.down1(x1)      # base_channels * 2
-        x3 = self.down2(x2)      # base_channels * 4
-        x4 = self.down3(x3)      # base_channels * 8
+        x1 = self.conv1(x)
+        if self.save_intermediates: self.intermediate_outputs['conv1'] = x1.detach()
 
-        x = self.up1(x3, x4)     # up1: (x3 from encoder, x4 from decoder)
-        x = self.up2(x2, x)      # up2: (x2 from encoder, x from previous)
-        x = self.up3(x1, x)      # up3: (x1 from encoder, x from previous)
+        x2 = self.down1(x1)
+        if self.save_intermediates: self.intermediate_outputs['down1'] = x2.detach()
+
+        x3 = self.down2(x2)
+        if self.save_intermediates: self.intermediate_outputs['down2'] = x3.detach()
+
+        x4 = self.down3(x3)
+        if self.save_intermediates: self.intermediate_outputs['down3'] = x4.detach()
+
+        x = self.up1(x3, x4)
+        if self.save_intermediates: self.intermediate_outputs['up1'] = x.detach()
+
+        x = self.up2(x2, x)
+        if self.save_intermediates: self.intermediate_outputs['up2'] = x.detach()
+
+        x = self.up3(x1, x)
+        if self.save_intermediates: self.intermediate_outputs['up3'] = x.detach()
+
         x = self.last_conv(x)
+        if self.save_intermediates: self.intermediate_outputs['output'] = x.detach()
+
         return x
+
+    def get_intermediate_outputs(self):
+        return self.intermediate_outputs if self.save_intermediates else None
+
 
 # class UNet(nn.Module):
 #     def __init__(self, input_channels=3, base_channels=50, dimensions=14):
