@@ -228,7 +228,7 @@ def train(params):
                 print(f"  Batch {i:3d} | Loss: {loss.item():.4f}")
 
         avg_loss = epoch_loss / len(cell_dataset)
-        val_avg_loss = validate(model, val_loader, ce_loss, tversky_loss, device)
+        val_avg_loss = validate(model, val_loader, ce_loss, dice_loss,tversky_loss, device)
         loss_history.append(avg_loss)
         val_loss_history.append(val_avg_loss)
         print(f"✅ Epoch {epoch+1} | Train Loss: {avg_loss:.4f} | Val Loss: {val_avg_loss:.4f}")
