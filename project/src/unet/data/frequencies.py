@@ -14,6 +14,7 @@ import numpy as np
 from PIL import Image
 
 def compute_class_frequencies(mask_dir, mask_list, num_classes=14):
+    '''Compute pixel number of each of each class in the segmentation masks'''
     class_counts = np.zeros(num_classes, dtype=np.uint64)
     
     for filename in mask_list:
@@ -33,7 +34,7 @@ def load_mask_list(txt_path):
     return filenames
 
 def compute_class_weights(data_folder, split="train"):
-    # Define paths safely
+    '''Compute class weights based on the frequency of each class in the train dataset'''
     seg_folder = os.path.join(data_folder, "VOCdevkit", "VOC2007")
     mask_dir = os.path.join(seg_folder, "SegmentationClass")
     txt_path = os.path.join(seg_folder, "ImageSets", "Segmentation", f"{split}.txt")
@@ -48,7 +49,7 @@ def compute_class_weights(data_folder, split="train"):
     return weights
 
 
-# if __name__ == "__main__":
-#     weights = compute_class_weights()
-#     print("Class Weights:", weights)
-#     print("Sum of Weights:", weights.sum())
+if __name__ == "__main__":
+    weights = compute_class_weights()
+    print("Class Weights:", weights)
+    print("Sum of Weights:", weights.sum())
