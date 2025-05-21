@@ -164,10 +164,10 @@ def train(params):
 
     # 4. Load weights (optional)
     if params.pretrained_weights and os.path.exists(params.pretrained_weights):
-        print(f"🔄 Loading pre-trained weights from {params.pretrained_weights} - current epoch {params.previous_epochs}")
+        print(f" Loading pre-trained weights from {params.pretrained_weights} - current epoch {params.previous_epochs}")
         model.load_state_dict(torch.load(params.pretrained_weights, map_location=device))
     else:
-        print("🚨 No pre-trained weights loaded.")
+        print(" No pre-trained weights loaded.")
 
 
     model.to(device)
@@ -183,7 +183,7 @@ def train(params):
     best_model_path = f"{params.model_path}_best.pt"
 
     for epoch in range(params.epoch_number):
-        print(f"\n🔁 Epoch {epoch+1}/{params.epoch_number}")
+        print(f"\n Epoch {epoch+1}/{params.epoch_number}")
         epoch_loss = 0
         model.train()
 
@@ -214,7 +214,7 @@ def train(params):
         val_avg_loss = validate(model, val_loader, ce_loss, dice_loss, device)
         loss_history.append(avg_loss)
         val_loss_history.append(val_avg_loss)
-        print(f"✅ Epoch {epoch+1} | Train Loss: {avg_loss:.4f} | Val Loss: {val_avg_loss:.4f}")
+        print(f" Epoch {epoch+1} | Train Loss: {avg_loss:.4f} | Val Loss: {val_avg_loss:.4f}")
 
         # Save model at intervals
         if (epoch + 1) % params.saving_interval == 0:
@@ -222,7 +222,7 @@ def train(params):
         if val_avg_loss < best_val_loss:
             best_val_loss = val_avg_loss
             torch.save(model.state_dict(), best_model_path)
-            print(f"💾 Best model saved with val loss {val_avg_loss:.4f}")
+            print(f" Best model saved with val loss {val_avg_loss:.4f}")
 
 
     # Final model save
@@ -237,7 +237,7 @@ def train(params):
     plt.legend(["Train Loss", "Validation Loss"])
     plt.title("Training Loss Curves")
     plt.savefig(f"{params.model_folder}/loss_curve.png")
-    print("📉 Loss curve saved as loss_curve.png")
+    print("Loss curve saved as loss_curve.png")
 
     return
 

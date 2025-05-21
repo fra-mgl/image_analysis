@@ -49,5 +49,5 @@ with open(f"{voc_root}/ImageSets/Segmentation/train.txt", "w") as f: #train or v
 #     for img_id in image_list:
 #         f.write(img_id + "\n")
 
-print(f"✅ Processed {len(image_list)} train images.") #here change val train or test
-print(f"📝 Created train.txt at: {voc_root}") #here change val train or test
+print(f" Processed {len(image_list)} train images.") #here change val train or test
+print(f" Created train.txt at: {voc_root}") #here change val train or test
