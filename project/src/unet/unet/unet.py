@@ -3,7 +3,7 @@ Filename: unet.py
 Description: implementation of U-Net model
 Author: Image-inativi
 Date: May 21st 2025
-Note: source ---
+Note: original code https://github.com/clemkoa/u-net - the source has been modified
 """
 
 import torch
