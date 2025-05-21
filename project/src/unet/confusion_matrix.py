@@ -1,3 +1,9 @@
+"""
+Filename: confusion_matrix.py
+Description: generate confusion matrix to evaluate model performance
+Author: Image-inativi
+Date: May 21st 2025
+"""
 import torch
 import numpy as np
 import matplotlib.pyplot as plt

@@ -1,3 +1,9 @@
+"""
+Filename: main.py
+Description: main script to generate submission
+Author: Image-inativi
+Date: May 21st 2025
+"""
 import numpy as np
 from PIL import Image
 import torch
@@ -16,6 +22,12 @@ from matplotlib.patches import Patch
 from PIL import Image
 
 from enum import Enum
+
+# ====== TO BE CONFIGURED BEFORE RUNNING ======
+# NOTE: dataset should be properly formatted
+data_folder = "data/VOCdevkit/"
+model_path = "src/unet/model/unet_voc_best.pt"
+# =============================================
 
 # Define VOC colormap and class names (14 classes)
 VOC_COLORMAP = [
@@ -126,9 +138,7 @@ def create_legend(classes, colormap):
     ]
     return legend_patches
 
-# Paths
-data_folder = "data/VOCdevkit/"
-model_path = "src/unet/model/unet_voc_best.pt"
+
 shuffle_data_loader = True
 
 # Transforms
@@ -152,16 +162,14 @@ def count_instances(area, cls):
 def post_processing(img_id, img, csv_writer):
     mask = np.array(img, dtype=np.uint8)
     
-    # POST PROCESSING
+    # 1. POST PROCESSING
     binary_img = mask > 0
-    # binary_img = opening(binary_img, disk(2))  # TODO slightly better using also this
-    binary_img = remove_small_holes(binary_img, 300) 
-    binary_img = remove_small_objects(binary_img, 300)
+    binary_img = remove_small_holes(binary_img, 150) 
+    binary_img = remove_small_objects(binary_img, 150)
 
-    #  COUNT
-
-    # EXTRACT CC
-    # Label connected components
+    #  2. COUNT
+    #  
+    # Extract connected components
     label_image, label_num = measure.label(binary_img, return_num=True)
 
     improved_mask = np.zeros_like(binary_img, dtype=int)
@@ -171,15 +179,16 @@ def post_processing(img_id, img, csv_writer):
         region = mask[label_image==i] 
         region_mask = np.where(label_image==i, mask, 0)
 
+        # check area
         class_bins = np.bincount(region)
         for j, b in enumerate(class_bins):
-                if j < 14 and j != 0 and b != 0:
+                if j < 14 and j != 0 and b != 0:  # if class is valid and is not empty
                     inst = count_instances(b, j)
                     prediction_counts[j] += inst
-                    if inst > 0:
-                        improved_mask[region_mask==j] = j            
+                    if inst > 0:  # fill improved mask for visualization and debugging
+                        improved_mask[region_mask==j] = j           
 
-    # append to csv
+    # append to submission csv
     row = [int(img_id)]
     for label in CSV_CLASSES:
         index = VOCEnum[label].value
@@ -187,12 +196,14 @@ def post_processing(img_id, img, csv_writer):
     csv_writer.writerow(row)
 
 if __name__ == "__main__":
+    print("Starting submission generation...")
     model = UNet(dimensions=14)
     model.load_state_dict(torch.load(model_path, map_location=torch.device("cpu")))
     model.eval()
 
     cell_dataset = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=shuffle_data_loader)
-
+    print("SUCCESS: Model and dataset loading")
+    print("Starting prediction...")
 
     with open('submission.csv', 'w', newline='') as csv_file:
         writer = csv.writer(csv_file)
@@ -209,3 +220,5 @@ if __name__ == "__main__":
 
             # Post processing and count
             post_processing(img_id, output_array, csv_writer=writer)
+
+    print("SUCCESS: Prediction")

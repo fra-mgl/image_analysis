@@ -1,13 +1,21 @@
+"""
+Filename: predict.py
+Description: use network to predict masks, contains also visualization/debuggin code
+Author: Image-inativi
+Date: May 21st 2025
+"""
 import numpy as np
 from PIL import Image
 import torch
 
 from unet.unet import UNet
-from torchvision import transforms, datasets
+from torchvision import transforms
 import matplotlib.pyplot as plt
 from matplotlib.patches import Patch
 import os
 from torchvision.datasets.vision import VisionDataset
+import time
+
 
 # Define VOC colormap and class names (14 classes)
 VOC_COLORMAP = [
@@ -33,7 +41,6 @@ VOC_CLASSES = [
     "Jelly Black", "Jelly Milk", "Jelly White", "Noblesse", "Noir authentique",
     "Passion au lait", "Stracciatella", "Tentation Noir", "Triangolo"
 ]
-
 
 class ResizeLongestSide:
     def __init__(self, longest=512):
@@ -101,24 +108,14 @@ model_path = "model/unet_voc_best.pt"
 shuffle_data_loader = True
 
 # Transforms
-#transform = transforms.Compose([transforms.Resize((512, 512)), transforms.ToTensor()])
 transform = transforms.Compose([
     ResizeLongestSide(512),
     transforms.ToTensor()
 ])
 target_transform = MaskTransform()
 
-# Dataset
-# dataset = datasets.VOCSegmentation(
-#     data_folder,
-#     year="2007",
-#     download=False,
-#     image_set="test",
-#     transform=transform,
-#     target_transform=target_transform,
-# )
 dataset = VOCInferenceDataset(
-    root=data_folder,
+    root="data/VOCdevkit/",
     image_set="test",
     transforms=transform
 )
@@ -126,28 +123,60 @@ dataset = VOCInferenceDataset(
 
 # Prediction and visualization
 def predict():
-    model = UNet(dimensions=14)
+    model = UNet(dimensions=14,save_intermediates=False)
     model.load_state_dict(torch.load(model_path, map_location=torch.device("cpu")))
     model.eval()
 
     cell_dataset = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=shuffle_data_loader)
 
-    #for i, (input, _) in enumerate(cell_dataset):
     for i, (input, path) in enumerate(cell_dataset):
-        # Load image
-        # filename = os.path.basename(path[0])
-        # filename = filename.split('.')[0]
-        # if filename != 'L1010044':
-        #     continue
-
+        filename = os.path.basename(path[0])
+        filename = filename.split('.')[0]
+        
+        # generate prediction
         with torch.no_grad():
             output = model(input)
 
+
+        """
+        # VISUALIZATION OF INTERMEDIATE OUTPUTS
+        intermediates = model.get_intermediate_outputs()
+
+        # Visualize a specific layer
+        layer_name = 'up1'
+        feature_maps = intermediates[layer_name][0]  # first item in batch
+
+        # Display first 16 feature maps in a 4x4 grid
+        
+        os.makedirs("intermediates", exist_ok=True)
+
+        for j in intermediates:
+            feature_maps = intermediates[j][0]  # first item in batch
+            num_features = min(16, feature_maps.shape[0])  # Avoid out-of-bounds
+            fig, axs = plt.subplots(4, 4, figsize=(12, 12))
+            for i in range(num_features):
+                ax = axs[i // 4, i % 4]
+                ax.imshow(feature_maps[i].cpu(), cmap='viridis')
+                ax.set_title(f"{j} - Feature Map n°{i}")
+                ax.axis('off')
+                plt.tight_layout()
+                plt.savefig(f"./intermediates/{filename}_{j}.png")
+
+        plt.show()
+        """
+            
         # Prepare image and mask
         input_np = (input.squeeze().permute(1, 2, 0).numpy() * 255).astype(np.uint8)
         output_array = output.argmax(dim=1).squeeze().numpy().astype(np.uint8)
         output_rgb = decode_segmap(output_array)
 
+        # store predicted mask
+        filename = os.path.basename(path[0])
+        filename = filename.split('.')[0]
+        img = Image.fromarray(output_array, mode='L')
+        img.save(f"./predict_output/{filename}.png")
+        
+        
         # Plot input and colored segmentation
         plt.figure(figsize=(15, 5))
         plt.subplot(1, 2, 1)
@@ -157,7 +186,7 @@ def predict():
 
         plt.subplot(1, 2, 2)
         plt.imshow(output_rgb)
-        plt.title(f"Predicted Segmentation {path[0]}")
+        plt.title("Predicted Segmentation")
         plt.axis("off")
 
         # Add color legend
@@ -166,9 +195,11 @@ def predict():
 
         plt.tight_layout()
         plt.show()
-
-        if i >= 60:
-            break
+        
 
 if __name__ == "__main__":
+    start_time = time.time()
     predict()
+    end_time = time.time()
+    execution_time = end_time - start_time
+    print(f"Execution time: {execution_time:.6f} seconds")

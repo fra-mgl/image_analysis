@@ -1,11 +1,13 @@
+"""
+Filename: my_statistics.py
+Description: script to compute chocolates statistics to be used in the
+             last step of the pipeline
+Author: Image-inativi
+Date: May 21st 2025
+"""
 import os
 import numpy as np
-from torchvision import datasets
-from torchvision.transforms import Compose
 from PIL import Image
-from collections import defaultdict
-from skimage.measure import regionprops, label
-import cv2
 
 def resizing(img):
     w, h = img.size
@@ -19,7 +21,7 @@ folder_path = './SegmentationClass/'
 i = 0
 num_classes = 14
 class_counts_pixels = np.zeros(num_classes, dtype=np.uint64)
-class_counts_instances = {
+class_counts_instances = {  # generated using weak lables
     1: 41,
     2: 37,
     3: 41,
@@ -50,12 +52,7 @@ with os.scandir(folder_path) as entries:
                 for cls in range(num_classes):
                     class_counts_pixels[cls] += np.sum(mask == cls)
             i += 1
-            # if i > 10:
-            #     break 
+
 
 for i in range(1,num_classes):
     print(i, int(class_counts_pixels[i]/(class_counts_instances[i]*3)))
-
-# import pandas as pd
-# area_df = pd.DataFrame(dict((f'class_{k}', v) for k, v in area_stats.items()))
-# import ace_tools as tools; tools.display_dataframe_to_user(name="Area Statistics by Class", dataframe=area_df)

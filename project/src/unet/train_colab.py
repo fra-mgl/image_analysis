@@ -1,14 +1,19 @@
+"""
+Filename: train_colab.py
+Description: functions to train model on Google Colab
+Author: Image-inativi
+Date: May 21st 2025
+"""
 import os
 import torch
 import torch.optim as optim
 from pathlib import Path
 from torch import nn
-from torchvision import transforms, utils, datasets
+from torchvision import transforms, datasets
 import numpy as np
 from PIL import Image
 import cv2
 from torchvision.transforms import functional as F
-# 
 import matplotlib.pyplot as plt
 from unet.unet import UNet
 from data.frequencies import compute_class_weights
@@ -19,7 +24,7 @@ torch.manual_seed(42)
 np.random.seed(42)
 
 class TrainingParams():
-    def __init__(self, data_folder, model_folder,  epoch_number, saving_interval, bilateral_parameters, shuffle = True):
+    def __init__(self, data_folder, model_folder,  epoch_number, saving_interval, bilateral_parameters, shuffle = True, pretrained_weights=None, previous_epochs=0):
         self.data_folder = data_folder
         self.model_folder = Path(model_folder)
         self.model_folder.mkdir(exist_ok=True)
@@ -28,6 +33,8 @@ class TrainingParams():
         self.epoch_number = epoch_number
         self.bilateral_parameters = bilateral_parameters
         self.shuffle_data_loader = shuffle
+        self.pretrained_weights = pretrained_weights
+        self.previous_epochs = previous_epochs
         
   
 class BilateralFilter():
@@ -85,31 +92,8 @@ class DiceLoss(nn.Module):
 
         dice_score = (2. * intersection + self.smooth) / (cardinality + self.smooth)
         return 1. - dice_score.mean()
-    
-class TverskyLoss(nn.Module):
-    def __init__(self, alpha=0.35, beta=0.65, smooth=1.0):
-        super(TverskyLoss, self).__init__()
-        self.alpha = alpha
-        self.beta = beta
-        self.smooth = smooth
 
-    def forward(self, logits, targets):
-        num_classes = logits.shape[1]
-        logits = torch.softmax(logits, dim=1)
-        
-        # One-hot encode targets
-        targets_one_hot = torch.nn.functional.one_hot(targets, num_classes).permute(0, 3, 1, 2).float()
-
-        dims = (0, 2, 3)
-        TP = torch.sum(logits * targets_one_hot, dims)
-        FP = torch.sum(logits * (1 - targets_one_hot), dims)
-        FN = torch.sum((1 - logits) * targets_one_hot, dims)
-
-        tversky_index = (TP + self.smooth) / (TP + self.alpha * FP + self.beta * FN + self.smooth)
-        return 1.0 - tversky_index.mean()
-
-
-def validate(model, val_loader, ce_loss, dice_loss,tvwersky_loss, device):
+def validate(model, val_loader, ce_loss, dice_loss, device):
     model.eval()
     val_loss = 0.0
 
@@ -121,8 +105,7 @@ def validate(model, val_loader, ce_loss, dice_loss,tvwersky_loss, device):
             output = model(input)
             loss_ce = ce_loss(output, target)
             loss_dice = dice_loss(output, target)
-            loss_tvwersky = tvwersky_loss(output, target)
-            loss = 0.5 * loss_ce + 0.25 * loss_dice + 0.25 * loss_tvwersky
+            loss = 0.5 * loss_ce + 0.5 * loss_dice
 
             val_loss += loss.item()
 
@@ -134,13 +117,6 @@ def train(params):
 
     #1. Define transform
     print("Defining transform...")
-    # transform = transforms.Compose([
-    #     ResizeLongestSide(512),
-    #     transforms.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.2),
-    #     transforms.GaussianBlur(kernel_size=5, sigma=(1, 2)),
-    #     transforms.ToTensor(),
-    #     transforms.RandomErasing(p=0.3)
-    # ])
     transform = transforms.Compose([
     ResizeLongestSide(512),
     BilateralFilter(params),  
@@ -185,13 +161,21 @@ def train(params):
     model = UNet(dimensions=14)
     total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print(f"Total parameters: {total_params}")
+
+    # 4. Load weights (optional)
+    if params.pretrained_weights and os.path.exists(params.pretrained_weights):
+        print(f"🔄 Loading pre-trained weights from {params.pretrained_weights} - current epoch {params.previous_epochs}")
+        model.load_state_dict(torch.load(params.pretrained_weights, map_location=device))
+    else:
+        print("🚨 No pre-trained weights loaded.")
+
+
     model.to(device)
 
     optimizer = optim.RMSprop(model.parameters(), lr=0.0001, weight_decay=1e-8, momentum=0.9)
     
     ce_loss = nn.CrossEntropyLoss(weight = weights) #
     dice_loss = DiceLoss()
-    tversky_loss = TverskyLoss()
 
     loss_history = []
     val_loss_history = []
@@ -218,8 +202,7 @@ def train(params):
             #loss = criterion(output, target)
             loss_ce = ce_loss(output, target)
             loss_dice = dice_loss(output, target)
-            loss_tversky = tversky_loss(output, target)
-            loss = 0.5 * loss_ce + 0.25 * loss_tversky +0.25 * loss_dice
+            loss = 0.5 * loss_ce + 0.5 * loss_dice
             loss.backward()
             optimizer.step()
             
@@ -228,7 +211,7 @@ def train(params):
                 print(f"  Batch {i:3d} | Loss: {loss.item():.4f}")
 
         avg_loss = epoch_loss / len(cell_dataset)
-        val_avg_loss = validate(model, val_loader, ce_loss, dice_loss,tversky_loss, device)
+        val_avg_loss = validate(model, val_loader, ce_loss, dice_loss, device)
         loss_history.append(avg_loss)
         val_loss_history.append(val_avg_loss)
         print(f"✅ Epoch {epoch+1} | Train Loss: {avg_loss:.4f} | Val Loss: {val_avg_loss:.4f}")
@@ -260,13 +243,13 @@ def train(params):
 
 
 
-# if __name__ == "__main__":
-#     params = TrainingParams(
-#         data_folder="data/",
-#         model_folder="model/",
-#         epoch_number=30,
-#         saving_interval=10,
-#         bilateral_parameters=(5, 75, 75),  # d, sigma_color, sigma_space
-#         shuffle=True
-#     )
-#     train(params)
+if __name__ == "__main__":
+    params = TrainingParams(
+        data_folder="data/",
+        model_folder="model/",
+        epoch_number=30,
+        saving_interval=10,
+        bilateral_parameters=(5, 75, 75),  # d, sigma_color, sigma_space
+        shuffle=True
+    )
+    train(params)

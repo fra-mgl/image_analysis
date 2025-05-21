@@ -1,3 +1,9 @@
+"""
+Filename: frequencies.py
+Description: compute statistics, useful for training
+Author: Image-inativi
+Date: May 21st 2025
+"""
 import os
 import numpy as np
 from PIL import Image

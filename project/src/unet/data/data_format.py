@@ -1,3 +1,9 @@
+"""
+Filename: data_format.py
+Description: create the dataset
+Author: Image-inativi
+Date: May 21st 2025
+"""
 import os
 import shutil
 
